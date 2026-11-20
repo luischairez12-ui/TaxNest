@@ -34,7 +34,8 @@ object TaxNestImport {
         var added=0;var skipped=0
         data.drop(1).forEach{ c ->
             if(c.size!=8){skipped++;return@forEach}
-            val (type,date,name,amount,category,status,detail,uri)=c
+            val type=c[0];val date=c[1];val name=c[2];val amount=c[3]
+            val category=c[4];val status=c[5];val detail=c[6];val uri=c[7]
             if(runCatching{LocalDate.parse(date)}.isFailure || name.isBlank()){skipped++;return@forEach}
             when(type) {
                 "transaction" -> {
