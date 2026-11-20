@@ -133,7 +133,7 @@ fun ReceiptsScreen(store: TaxNestStore, takePicture:()->Unit, pickImage:()->Unit
         item {
             GlassCard(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-                    Icon(Icons.Rounded.Folder,color=Blue,contentDescription=null)
+                    Icon(Icons.Rounded.Folder,tint=Blue,contentDescription=null)
                     Column { Text("Pictures / TaxNest / Receipts",fontWeight=FontWeight.Bold,color=Ink,fontSize=14.sp)
                         Text("Android Files and Photos can access these images",fontSize=11.sp,color=Muted) }
                 }
