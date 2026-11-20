@@ -85,7 +85,7 @@ fun TaxNestApp(
 private fun TopBar(page:Page,onHome:()->Unit) {
     Row(Modifier.fillMaxWidth().padding(start=21.dp,end=20.dp,top=14.dp,bottom=10.dp),verticalAlignment=Alignment.CenterVertically) {
         Box(Modifier.size(42.dp).background(Color.White.copy(alpha=.88f),RoundedCornerShape(14.dp)),contentAlignment=Alignment.Center) {
-            Icon(Icons.Rounded.Wallet,color=Blue,contentDescription=null)
+            Icon(Icons.Rounded.Wallet,tint=Blue,contentDescription=null)
         }
         Spacer(Modifier.width(10.dp))
         Column {
