@@ -24,10 +24,10 @@ class TaxNestStore(context: Context) {
     fun reload() {
         entries=database.entries(); subscriptions=database.subscriptions(); overtime=database.overtime(); mileage=database.mileage()
     }
-    fun setProfile(value: String) { profile=value; preferences.edit().putString("profile",value).apply() }
-    fun setTaxYear(value:Int) { taxYear=value.coerceIn(2025,2028); preferences.edit().putInt("taxYear",taxYear).apply() }
-    fun setFilingStatus(value: String) { filingStatus=value; preferences.edit().putString("filingStatus",value).apply() }
-    fun setDependents(value: Int) { dependents=value.coerceIn(0,30);preferences.edit().putInt("dependents",dependents).apply() }
+    fun updateProfile(value: String) { profile=value; preferences.edit().putString("profile",value).apply() }
+    fun updateTaxYear(value:Int) { taxYear=value.coerceIn(2025,2028); preferences.edit().putInt("taxYear",taxYear).apply() }
+    fun updateFilingStatus(value: String) { filingStatus=value; preferences.edit().putString("filingStatus",value).apply() }
+    fun updateDependents(value: Int) { dependents=value.coerceIn(0,30);preferences.edit().putInt("dependents",dependents).apply() }
     fun updateCredit(score:Int,balance:Long,limit:Long) {
         creditScore=score;cardBalanceCents=balance;cardLimitCents=limit
         preferences.edit().putInt("creditScore",score).putLong("cardBalanceCents",balance).putLong("cardLimitCents",limit).apply()
