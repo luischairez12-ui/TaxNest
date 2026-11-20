@@ -1,6 +1,7 @@
 package com.taxnest.app.receipts
 
 import com.taxnest.app.data.today
+import com.taxnest.app.data.SmartInsights
 import com.taxnest.app.data.parseMoney
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -29,6 +30,6 @@ object ReceiptParser {
                 LocalDate.of(year,parts[0].toInt(),parts[1].toInt()).toString()
             } catch (_:Exception){null}
         } ?: today()
-        return ReceiptDraft(merchant=merchant,amount=best,date=foundDate,photoUri=uri,rawText=text)
+        return ReceiptDraft(merchant=merchant,amount=best,date=foundDate,category=SmartInsights.category(merchant,text),photoUri=uri,rawText=text)
     }
 }

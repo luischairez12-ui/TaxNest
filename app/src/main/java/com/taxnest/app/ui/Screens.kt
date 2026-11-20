@@ -67,7 +67,9 @@ fun HomeScreen(store: TaxNestStore, go:(Page)->Unit, addMoney:()->Unit, scan:()-
                 Triple("Overtime",Icons.Rounded.Schedule,Page.Overtime),
                 Triple("Subscriptions",Icons.Rounded.Subscriptions,Page.Subscriptions),
                 Triple("Spending",Icons.Rounded.PieChart,Page.Money),
-                Triple("Tax Breaks",Icons.Rounded.AutoAwesome,Page.TaxBreaks)
+                Triple("Tax Breaks",Icons.Rounded.AutoAwesome,Page.TaxBreaks),
+                Triple("Smart Inbox",Icons.Rounded.MarkEmailRead,Page.SmartInbox),
+                Triple("Tax Reports",Icons.Rounded.Description,Page.Reports)
             )
             Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 tiles.chunked(3).forEach{row->
@@ -126,7 +128,7 @@ private fun QuickAction(icon:ImageVector,title:String,subtitle:String,modifier:M
 }
 
 @Composable
-fun ReceiptsScreen(store: TaxNestStore, takePicture:()->Unit, pickImage:()->Unit, addManual:()->Unit) {
+fun ReceiptsScreen(store: TaxNestStore, takePicture:()->Unit, pickImage:()->Unit, addManual:()->Unit,openInbox:()->Unit) {
     val entries=store.entries.filter{it.receiptUri!=null}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item { PageHeading("Receipt Vault","Every original photo, safely organized.") }
@@ -148,6 +150,9 @@ fun ReceiptsScreen(store: TaxNestStore, takePicture:()->Unit, pickImage:()->Unit
         }
         item { Text("Scans extract text on-device, and you review every amount before it's added.",color=Muted,fontSize=12.sp) }
         item { SectionHeading("Saved receipts (${entries.size})") }
+        item { GlassCard(Modifier.fillMaxWidth()) {
+            ActionRow(Icons.Rounded.MarkEmailRead,"Import emailed receipts","Paste or share order confirmations into TaxNest",openInbox)
+        } }
         if(entries.isEmpty()) item { EmptyNotice("No receipts yet","Tap Camera or Import to save your first receipt.",Icons.Rounded.ReceiptLong) }
         else items(entries.size) { i -> ReceiptRow(entries[i],onDelete={store.deleteEntry(entries[i].id)}) }
     }
@@ -272,9 +277,24 @@ fun SubscriptionsScreen(store:TaxNestStore,addSubscription:()->Unit) {
                 Icon(Icons.Rounded.Email,null,tint=Lavender);Text("Email subscription detection",fontWeight=FontWeight.SemiBold,color=Ink)
             }
             Spacer(Modifier.height(7.dp))
-            Text("Coming later: optional Gmail connection with explicit consent. For now, add subscriptions manually. No mailbox is being accessed.",color=Muted,fontSize=12.sp)
+            Text("Recurring suggestions come from your own recorded purchases. No email inbox or bank account is being accessed.",color=Muted,fontSize=12.sp)
         } }
         item { SectionHeading("Tracked subscriptions (${store.subscriptions.size})") }
+        val recurring = SmartInsights.recurringCandidates(store.entries,store.subscriptions)
+        if(recurring.isNotEmpty()) {
+            item { SectionHeading("Possible subscriptions found (${recurring.size})") }
+            items(recurring) { guess ->
+                GlassCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(guess.merchant,color=Ink,fontWeight=FontWeight.Bold)
+                            Text("${guess.occurrences} similar charges · ${guess.cadence} · ${dollars(guess.amountCents)}",fontSize=12.sp,color=Muted)
+                        }
+                        TextButton(onClick={store.addSubscription(guess.merchant,guess.amountCents,guess.cadence,guess.nextDue)}) { Text("Add") }
+                    }
+                }
+            }
+        }
         if(store.subscriptions.isEmpty()) item{EmptyNotice("No subscriptions yet","Track your streaming, apps, memberships and more.",Icons.Rounded.Subscriptions)}
         else items(store.subscriptions.size){index->
             val sub=store.subscriptions[index]
@@ -409,6 +429,15 @@ fun TaxBreaksScreen(store:TaxNestStore,go:(Page)->Unit) {
             }
             Text("Suggestions adjust by work type; a tax professional should verify eligibility.",color=Muted,fontSize=11.sp)
         } }
+        item { GlassCard(Modifier.fillMaxWidth()) {
+            MiniLabel("Receipts that may need attention")
+            val yearEntries=store.entries.filter{it.kind=="expense"&&it.date.startsWith(store.taxYear.toString())}
+            val withPhotos=yearEntries.count{!it.receiptUri.isNullOrBlank()}
+            val workRelated=yearEntries.filter{it.category.contains("Truck",true)||it.category.contains("Tools",true)||it.category.contains("Fuel",true)}
+            Text("${yearEntries.size} recorded expenses · $withPhotos with photos",color=Ink,fontWeight=FontWeight.Bold)
+            Text("${workRelated.size} vehicle/tool/fuel entries to classify for potential reimbursement or contractor business use.",color=Muted,fontSize=12.sp)
+            Text("Categories alone never establish eligibility; personal use and W-2 rules still apply.",color=Muted,fontSize=11.sp)
+        } }
         item { SectionHeading("Opportunities to review (${opportunityList.size})") }
         items(opportunityList.size) { index ->
             val opportunity=opportunityList[index]
@@ -433,7 +462,7 @@ fun TaxBreaksScreen(store:TaxNestStore,go:(Page)->Unit) {
 }
 
 @Composable
-fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit) {
+fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit,openInbox:()->Unit,openReports:()->Unit,importCsv:()->Unit) {
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {PageHeading("Your TaxNest","A little organized goes a long way.")}
         item { GlassCard(Modifier.fillMaxWidth()) {
@@ -466,7 +495,11 @@ fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit) {
             }
         } }
         item {GlassCard(Modifier.fillMaxWidth()) {
-            ActionRow(Icons.Rounded.Subscriptions,"Subscriptions","Keep track of recurring charges"){go(Page.Subscriptions)}
+            ActionRow(Icons.Rounded.Subscriptions,"Subscriptions","Track recurring charges and auto-discover patterns"){go(Page.Subscriptions)}
+            HorizontalDivider(color=SoftLine)
+            ActionRow(Icons.Rounded.MarkEmailRead,"Smart Inbox","Paste or share email purchase text",openInbox)
+            HorizontalDivider(color=SoftLine)
+            ActionRow(Icons.Rounded.PictureAsPdf,"Annual PDF Report","Prepare a printable year-end summary",openReports)
             HorizontalDivider(color=SoftLine)
             ActionRow(Icons.Rounded.Schedule,"Overtime Tracker","Track potentially qualified premium"){go(Page.Overtime)}
             HorizontalDivider(color=SoftLine)
@@ -475,6 +508,8 @@ fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit) {
             ActionRow(Icons.Rounded.CreditScore,"Credit Comeback","Monitor card utilization and FICO goals"){go(Page.Credit)}
             HorizontalDivider(color=SoftLine)
             ActionRow(Icons.Rounded.FileDownload,"Export all tax records CSV","Expenses, subscriptions, mileage and overtime",exportCsv)
+            HorizontalDivider(color=SoftLine)
+            ActionRow(Icons.Rounded.Restore,"Restore TaxNest CSV","Import an earlier TaxNest backup without duplicating records",importCsv)
         }}
         item { GlassCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -484,14 +519,14 @@ fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit) {
                 Text("NOT CONNECTED",fontSize=10.sp,color=Lavender,fontWeight=FontWeight.Bold)
             }
             Spacer(Modifier.height(7.dp))
-            Text("Planned: optional Google sign-in for receipt emails and subscription detection. No OAuth client or Gmail-reading permission is included in this first build.",fontSize=12.sp,color=Muted)
+            Text("Gmail inbox access is not connected. You can voluntarily paste or share purchase emails through Smart Inbox; no mailbox-reading permission is requested.",fontSize=12.sp,color=Muted)
         } }
         item { GlassCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){Icon(Icons.Rounded.PrivacyTip,null,tint=Blue);Text("Your data & privacy",fontWeight=FontWeight.Bold,color=Ink)}
             Spacer(Modifier.height(8.dp))
             Text("Your ledger is stored in this app's private local SQLite database. Original receipt pictures are stored in the visible Pictures/TaxNest/Receipts folder and are not encrypted. They may be accessible to apps with photo permissions. There is no cloud synchronization in this version. CSV exports are also unencrypted.",color=Muted,fontSize=12.sp)
             Spacer(Modifier.height(8.dp))
-            Text("V1 prototype · Not a tax filing or financial advice service",fontSize=11.sp,color=Muted)
+            Text("Batch 2 preview · Not a tax filing or financial advice service",fontSize=11.sp,color=Muted)
         } }
     }
 }

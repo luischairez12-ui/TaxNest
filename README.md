@@ -1,8 +1,8 @@
-# TaxNest — Android app, Batch 1
+# TaxNest — Android app, Batch 2
 
 **A real native Android / Kotlin / Jetpack Compose project, based on the approved Mi Transfer / Mi Tidy glassmorphism concept.**
 
-This repository contains implementation source, local storage, screens, and a GitHub Actions APK build workflow. **It is not a precompiled APK.** The source was authored and its pure Kotlin receipt parser and overtime math were smoke-tested, but an end-to-end Android build and device test could not be completed in the authoring environment because Android SDK and Gradle were unavailable.
+This repository contains implementation source, local storage, screens, and a GitHub Actions APK build workflow. **GitHub Actions builds the installable debug APK.** The source was authored and its pure Kotlin receipt parser and overtime math were smoke-tested, but an end-to-end Android build and device test could not be completed in the authoring environment because Android SDK and Gradle were unavailable.
 
 ## What works in this first implementation (when built)
 
@@ -16,6 +16,10 @@ This repository contains implementation source, local storage, screens, and a Gi
 - Credit Comeback: manual FICO/credit card balance & limit entry, utilization feedback, responsible payoff checklist.
 - Personal tax profile: W-2/1099, filing status, dependents, tax year (2025–2028).
 - Offline-first: no paid server, no Gmail token, no bank login, no ads.
+
+## Batch 2 additions
+
+See [BATCH2_NOTES.md](BATCH2_NOTES.md). New: Smart Inbox for user-shared email text (not OAuth), receipt duplicate review, category suggestions, recurring subscription hints, year-end PDF report and CSV restore. All monetary records remain on-device.
 
 ### Not yet implemented
 
@@ -33,7 +37,7 @@ This repository contains implementation source, local storage, screens, and a Gi
 4. When the run succeeds, open its **TaxNest-debug-apk** artifact, download and unzip it. Install `app-debug.apk` on your Android phone, approving the browser/file manager's Install Unknown Apps prompt when required.
 5. If the run fails, read the Actions job logs. Debug APKs are for personal testing, not release-store distribution.
 
-The workflow uses JDK 17, Gradle 8.13, Android SDK 36, Kotlin 2.2.20, and Compose BOM 2026.09.00.
+The workflow uses JDK 17, Gradle 8.13, Android SDK 36, Kotlin 2.2.20, and Compose BOM 2025.08.00.
 
 ## Build locally
 

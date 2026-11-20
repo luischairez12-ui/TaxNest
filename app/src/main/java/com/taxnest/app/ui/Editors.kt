@@ -81,19 +81,22 @@ fun MoneyEditor(onClose:()->Unit,onSave:(String,String,Long,String,String)->Unit
 }
 
 @Composable
-fun ReceiptReviewDialog(draft:ReceiptDraft,onClose:()->Unit,onSave:(String,String,Long,String,String,String)->Unit) {
+fun ReceiptReviewDialog(draft:ReceiptDraft,existing:List<com.taxnest.app.data.MoneyEntry>,onClose:()->Unit,onSave:(String,String,Long,String,String,String)->Unit) {
     var merchant by remember(draft){mutableStateOf(draft.merchant)}
     var amount by remember(draft){mutableStateOf(draft.amount)}
     var date by remember(draft){mutableStateOf(draft.date)}
     var category by remember(draft){mutableStateOf(draft.category)}
     var error by remember { mutableStateOf<String?>(null) }
-    EntryDialog("Review your receipt",onClose) {
+    var duplicateConfirmed by remember(draft) { mutableStateOf(false) }
+    val matches = com.taxnest.app.data.SmartInsights.duplicateMatches(existing,date,merchant,parseMoney(amount) ?: 0)
+    EntryDialog(if(draft.photoUri.isBlank())"Review emailed purchase" else "Review your receipt",onClose) {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            ReceiptThumbnail(draft.photoUri)
+            if(draft.photoUri.isNotBlank()) ReceiptThumbnail(draft.photoUri)
+            else Icon(Icons.Rounded.MarkEmailRead,null,tint=Blue,modifier=Modifier.size(42.dp))
             Column {
-                Text("Original photo saved",color=Ink,fontWeight=FontWeight.Bold)
-                Text("Pictures/TaxNest/Receipts",color=Muted,fontSize=11.sp)
-                Text("OCR suggestions — check every field",color=Muted,fontSize=11.sp)
+                Text(if(draft.photoUri.isNotBlank())"Original photo saved" else "Imported from shared or pasted text",color=Ink,fontWeight=FontWeight.Bold)
+                Text(if(draft.photoUri.isNotBlank())"Pictures/TaxNest/Receipts" else "No image attached to this record",color=Muted,fontSize=11.sp)
+                Text("Review suggested details before saving",color=Muted,fontSize=11.sp)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -101,10 +104,22 @@ fun ReceiptReviewDialog(draft:ReceiptDraft,onClose:()->Unit,onSave:(String,Strin
         Field("Total (USD)",amount,{amount=it},"Enter total if OCR missed it")
         Field("Date (YYYY-MM-DD)",date,{date=it})
         Field("Category",category,{category=it})
-        Text("A saved receipt does not mean the purchase is tax deductible.",color=Muted,fontSize=12.sp)
+        if(matches.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("Possible duplicate found!",color=MaterialTheme.colorScheme.error,fontSize=13.sp,fontWeight=FontWeight.Bold)
+            matches.take(2).forEach { match ->
+                Text("${match.entry.merchant} · ${match.entry.date} · ${com.taxnest.app.data.dollars(match.entry.amountCents)}",color=Muted,fontSize=12.sp)
+            }
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                Checkbox(checked=duplicateConfirmed,onCheckedChange={duplicateConfirmed=it})
+                Text("This is a different purchase — save anyway",fontSize=12.sp,color=Ink)
+            }
+        }
+        Text("Saving a purchase doesn't mean it is tax deductible. Work expenses need review.",color=Muted,fontSize=12.sp)
         ValidationError(error)
         SaveButton("Save receipt & expense") { val cents=parseMoney(amount)
             if(merchant.isBlank()||cents==null||cents<=0||!validDate(date)||category.isBlank()) error="Review the merchant, total, date and category before saving."
+            else if(matches.isNotEmpty()&&!duplicateConfirmed) error="This looks like an existing transaction. Check the box if it is a different purchase."
             else onSave(date,merchant.trim(),cents,category.trim(),draft.photoUri,draft.rawText)
         }
     }

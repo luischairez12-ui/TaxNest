@@ -10,6 +10,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.taxnest.app.data.TaxNestExport
+import com.taxnest.app.data.TaxNestReport
+import com.taxnest.app.data.TaxNestImport
+import com.taxnest.app.receipts.EmailReceiptParser
 import com.taxnest.app.data.TaxNestStore
 import com.taxnest.app.receipts.ReceiptDraft
 import com.taxnest.app.receipts.ReceiptParser
@@ -48,6 +51,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val openCsv = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { source ->
+            try {
+                val result=contentResolver.openInputStream(source)?.bufferedReader()?.use{ TaxNestImport.restore(store,it) }
+                    ?: error("Couldn't read CSV file")
+                appError="Imported ${result.added} records; skipped ${result.skipped} duplicates or unsupported rows. Receipt photos are separate files."
+            } catch(e:Exception) { appError="CSV import failed: ${e.message}" }
+        }
+    }
+    private val createPdf = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { destination ->
+            try {
+                contentResolver.openOutputStream(destination)?.use { TaxNestReport.writePdf(store,it) }
+                    ?: error("Unable to open PDF destination")
+            } catch (e: Exception) { appError = "Could not export PDF: ${e.message}" }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = TaxNestStore(applicationContext)
@@ -61,10 +82,13 @@ class MainActivity : ComponentActivity() {
                     onErrorDismiss = { appError = null },
                     onScannedDismiss = { receiptDraft = null },
                     onScannedSave = { date, merchant, cents, category, uri, rawText ->
-                        store.addEntry(date,merchant,cents,category,"expense",uri,rawText,"receipt")
+                        store.addEntry(date,merchant,cents,category,"expense",uri.ifBlank{null},rawText,if(uri.isBlank())"shared-text" else "receipt")
                         receiptDraft = null
                     },
                     onPickImage = { pickImage.launch("image/*") },
+                    onImportText = { text -> receiptDraft=EmailReceiptParser.parse(text) },
+                    onExportPdf = { createPdf.launch("TaxNest_${store.taxYear}_AnnualSummary.pdf") },
+                    onImportCsv = { openCsv.launch(arrayOf("text/*","text/comma-separated-values","application/csv","application/octet-stream")) },
                     onTakePicture = { launchCamera() },
                     onExportCsv = { createCsv.launch("TaxNest_TaxRecords_${java.time.LocalDate.now()}.csv") }
                 )
@@ -80,7 +104,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleShare(source:Intent?) {
-        if (source?.action != Intent.ACTION_SEND || source.type?.startsWith("image/") != true) return
+        if (source?.action != Intent.ACTION_SEND) return
+        if (source.type?.startsWith("text/") == true) {
+            source.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let {
+                receiptDraft = EmailReceiptParser.parse(it)
+            }
+            return
+        }
+        if (source.type?.startsWith("image/") != true) return
         @Suppress("DEPRECATION")
         val image = if (Build.VERSION.SDK_INT >= 33)
             source.getParcelableExtra(Intent.EXTRA_STREAM,Uri::class.java)

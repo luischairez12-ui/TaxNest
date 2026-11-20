@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.taxnest.app.data.*
 import com.taxnest.app.receipts.ReceiptDraft
 
-enum class Page(val label:String) { Home("Home"), Receipts("Receipts"), Money("Money"), TaxBreaks("Tax Breaks"), More("More"), Subscriptions("Subscriptions"), Overtime("Overtime"), Mileage("Mileage"), Credit("Credit") }
+enum class Page(val label:String) { Home("Home"), Receipts("Receipts"), Money("Money"), TaxBreaks("Tax Breaks"), More("More"), Subscriptions("Subscriptions"), Overtime("Overtime"), Mileage("Mileage"), Credit("Credit"), SmartInbox("Smart Inbox"), Reports("Reports") }
 private enum class Editor { None, Money, Subscription, Overtime, Mileage, Credit }
 
 @Composable
@@ -36,6 +36,9 @@ fun TaxNestApp(
     onScannedSave:(String,String,Long,String,String,String)->Unit,
     onPickImage:()->Unit,
     onTakePicture:()->Unit,
+    onImportText:(String)->Unit,
+    onExportPdf:()->Unit,
+    onImportCsv:()->Unit,
     onExportCsv:()->Unit
 ) {
     var page by remember { mutableStateOf(Page.Home) }
@@ -48,14 +51,16 @@ fun TaxNestApp(
             Box(Modifier.weight(1f)) {
                 when(page) {
                     Page.Home -> HomeScreen(store,{page=it},{editor=Editor.Money},{page=Page.Receipts;onTakePicture()})
-                    Page.Receipts -> ReceiptsScreen(store,onTakePicture,onPickImage,{editor=Editor.Money})
+                    Page.Receipts -> ReceiptsScreen(store,onTakePicture,onPickImage,{editor=Editor.Money},{page=Page.SmartInbox})
                     Page.Money -> MoneyScreen(store,{editor=Editor.Money},onExportCsv,{page=Page.Subscriptions})
                     Page.TaxBreaks -> TaxBreaksScreen(store,{page=it})
-                    Page.More -> MoreScreen(store,{page=it},onExportCsv)
+                    Page.More -> MoreScreen(store,{page=it},onExportCsv,{page=Page.SmartInbox},{page=Page.Reports},onImportCsv)
                     Page.Subscriptions -> SubscriptionsScreen(store,{editor=Editor.Subscription})
                     Page.Overtime -> OvertimeScreen(store,{editor=Editor.Overtime})
                     Page.Mileage -> MileageScreen(store,{editor=Editor.Mileage})
                     Page.Credit -> CreditScreen(store,{editor=Editor.Credit})
+                    Page.SmartInbox -> SmartInboxScreen(store,onImportText)
+                    Page.Reports -> AnnualReportScreen(store,onExportPdf,onExportCsv)
                 }
             }
             BottomNav(page,primary) { page=it }
@@ -70,7 +75,7 @@ fun TaxNestApp(
         }
     }
     if(error!=null) AlertDialog(onDismissRequest=onErrorDismiss,title={Text("TaxNest",color=Ink)},text={Text(error)},confirmButton={TextButton(onClick=onErrorDismiss){Text("OK")}})
-    if(scanned!=null) ReceiptReviewDialog(scanned,onScannedDismiss,onScannedSave)
+    if(scanned!=null) ReceiptReviewDialog(scanned,store.entries,onScannedDismiss,onScannedSave)
     when(editor) {
         Editor.Money -> MoneyEditor({editor=Editor.None}) {date,merchant,amount,category,kind -> store.addEntry(date,merchant,amount,category,kind);editor=Editor.None}
         Editor.Subscription -> SubscriptionEditor({editor=Editor.None}){name,amount,frequency,nextDue->store.addSubscription(name,amount,frequency,nextDue);editor=Editor.None}
@@ -107,7 +112,7 @@ private fun TopBar(page:Page,onHome:()->Unit) {
 private fun BottomNav(page:Page,items:List<Page>,onClick:(Page)->Unit) {
     Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha=.90f),RoundedCornerShape(topStart=24.dp,topEnd=24.dp)).padding(vertical=9.dp,horizontal=5.dp),horizontalArrangement=Arrangement.SpaceEvenly) {
         items.forEach { item ->
-            val selected=page==item || (page in listOf(Page.Subscriptions,Page.Overtime,Page.Mileage,Page.Credit) && item==Page.More)
+            val selected=page==item || (page in listOf(Page.Subscriptions,Page.Overtime,Page.Mileage,Page.Credit,Page.SmartInbox,Page.Reports) && item==Page.More)
             val icon=when(item){Page.Home->Icons.Rounded.Home;Page.Receipts->Icons.Rounded.ReceiptLong;Page.Money->Icons.Rounded.PieChart;Page.TaxBreaks->Icons.Rounded.AutoAwesome;else->Icons.Rounded.GridView}
             Column(Modifier.weight(1f).clickable{onClick(item)}.padding(vertical=5.dp),horizontalAlignment=Alignment.CenterHorizontally) {
                 Icon(icon,contentDescription=item.label,tint=if(selected)Blue else Muted,modifier=Modifier.size(21.dp))
