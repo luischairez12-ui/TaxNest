@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
             val dir=File(cacheDir,"camera").also{it.mkdirs()}
             val temp=File.createTempFile("TaxNest_",".jpg",dir)
             cameraTempUri=FileProvider.getUriForFile(this,"${packageName}.fileprovider",temp)
-            takePicture.launch(cameraTempUri)
+            takePicture.launch(requireNotNull(cameraTempUri))
         } catch (e: Exception) { appError="Could not open camera: ${e.message}" }
     }
 
