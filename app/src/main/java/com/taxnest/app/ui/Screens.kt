@@ -404,7 +404,7 @@ fun TaxBreaksScreen(store:TaxNestStore,go:(Page)->Unit) {
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 listOf("W-2","1099").forEach { mode ->
-                    FilterChip(selected=store.profile==mode,onClick={store.setProfile(mode)},label={Text(mode)},modifier=Modifier.weight(1f))
+                    FilterChip(selected=store.profile==mode,onClick={store.updateProfile(mode)},label={Text(mode)},modifier=Modifier.weight(1f))
                 }
             }
             Text("Suggestions adjust by work type; a tax professional should verify eligibility.",color=Muted,fontSize=11.sp)
@@ -440,29 +440,29 @@ fun MoreScreen(store:TaxNestStore,go:(Page)->Unit,exportCsv:()->Unit) {
             MiniLabel("Your work profile")
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-                listOf("W-2","1099").forEach {mode -> FilterChip(selected=store.profile==mode,onClick={store.setProfile(mode)},label={Text(mode)},modifier=Modifier.weight(1f)) }
+                listOf("W-2","1099").forEach {mode -> FilterChip(selected=store.profile==mode,onClick={store.updateProfile(mode)},label={Text(mode)},modifier=Modifier.weight(1f)) }
             }
             Text("Change any time. Your existing entries remain saved.",fontSize=11.sp,color=Muted)
             Spacer(Modifier.height(10.dp))
             Text("Tax year",color=Ink,fontSize=13.sp,fontWeight=FontWeight.SemiBold)
             Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
                 (2025..2028).forEach { year ->
-                    FilterChip(selected=store.taxYear==year,onClick={store.setTaxYear(year)},label={Text("$year",fontSize=10.sp)})
+                    FilterChip(selected=store.taxYear==year,onClick={store.updateTaxYear(year)},label={Text("$year",fontSize=10.sp)})
                 }
             }
             Spacer(Modifier.height(9.dp))
             Text("Federal filing status",fontWeight=FontWeight.SemiBold,color=Ink,fontSize=13.sp)
             listOf("Single","Married filing jointly","Head of household").forEach{option->
-                Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.clickable{store.setFilingStatus(option)}){
-                    RadioButton(selected=store.filingStatus==option,onClick={store.setFilingStatus(option)},modifier=Modifier.size(34.dp))
+                Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.clickable{store.updateFilingStatus(option)}){
+                    RadioButton(selected=store.filingStatus==option,onClick={store.updateFilingStatus(option)},modifier=Modifier.size(34.dp))
                     Text(option,color=Ink,fontSize=12.sp)
                 }
             }
             Text("Dependents (manual)",fontWeight=FontWeight.SemiBold,color=Ink,fontSize=13.sp)
             Row(verticalAlignment=Alignment.CenterVertically){
-                IconButton(onClick={store.setDependents(store.dependents-1)}){Icon(Icons.Rounded.Remove,"Minus",tint=Blue)}
+                IconButton(onClick={store.updateDependents(store.dependents-1)}){Icon(Icons.Rounded.Remove,"Minus",tint=Blue)}
                 Text("${store.dependents}",fontWeight=FontWeight.Bold,color=Ink)
-                IconButton(onClick={store.setDependents(store.dependents+1)}){Icon(Icons.Rounded.Add,"Plus",tint=Blue)}
+                IconButton(onClick={store.updateDependents(store.dependents+1)}){Icon(Icons.Rounded.Add,"Plus",tint=Blue)}
             }
         } }
         item {GlassCard(Modifier.fillMaxWidth()) {
