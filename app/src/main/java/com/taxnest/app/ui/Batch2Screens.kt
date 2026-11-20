@@ -15,24 +15,66 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.taxnest.app.data.*
+import com.taxnest.app.gmail.GmailReceiptCandidate
 
 @Composable
-fun SmartInboxScreen(store:TaxNestStore,onImportText:(String)->Unit) {
+fun SmartInboxScreen(
+    store:TaxNestStore,
+    onImportText:(String)->Unit,
+    gmailBusy:Boolean,
+    gmailConnected:Boolean,
+    gmailStatus:String,
+    gmailCandidates:List<GmailReceiptCandidate>,
+    onConnectGmail:()->Unit,
+    onSyncGmail:()->Unit,
+    onDisconnectGmail:()->Unit,
+    onReviewGmail:(GmailReceiptCandidate)->Unit
+) {
     var draft by remember { mutableStateOf("") }
     val detected=SmartInsights.recurringCandidates(store.entries,store.subscriptions)
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item { PageHeading("Smart Inbox","Import emailed purchases — with your permission.") }
         item { GlassCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment=Alignment.CenterVertically) {
-                Icon(Icons.Rounded.MarkEmailUnread,null,tint=Blue)
+                Icon(Icons.Rounded.MarkEmailRead,null,tint=Blue,modifier=Modifier.size(29.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("Gmail not connected",fontWeight=FontWeight.Bold,color=Ink)
+                Column(Modifier.weight(1f)) {
+                    Text("Gmail receipt connection",fontWeight=FontWeight.Bold,color=Ink,fontSize=15.sp)
+                    Text(if(gmailConnected)"Authorized for this session" else "Optional · Google permission required",fontSize=11.sp,color=Muted)
+                }
             }
             Spacer(Modifier.height(8.dp))
-            Text("You control what enters TaxNest. Copy the receipt text from an email, paste it below, then check the merchant, total and date before saving.",fontSize=12.sp,color=Muted)
-            Spacer(Modifier.height(8.dp))
-            Text("You can also use Android's Share menu to share plain receipt text to TaxNest when your email app supports it.",fontSize=12.sp,color=Muted)
+            Text("Read-only Gmail access, only when you tap Sync. Possible purchase emails stay in this review list until you choose one. No mail is deleted or sent.",fontSize=12.sp,color=Muted)
+            Spacer(Modifier.height(10.dp))
+            Text(gmailStatus,fontSize=12.sp,color=if(gmailConnected)Blue else Muted)
+            Spacer(Modifier.height(10.dp))
+            Button(onClick=if(gmailConnected)onSyncGmail else onConnectGmail,
+                enabled=!gmailBusy,modifier=Modifier.fillMaxWidth(),
+                shape=RoundedCornerShape(15.dp),colors=ButtonDefaults.buttonColors(containerColor=Blue)) {
+                if(gmailBusy) CircularProgressIndicator(Modifier.size(16.dp),color=Color.White,strokeWidth=2.dp)
+                else Icon(Icons.Rounded.MarkEmailRead,null,modifier=Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if(gmailBusy)"Checking Gmail…" else if(gmailConnected)"Sync recent receipts" else "Connect Gmail (read-only)")
+            }
+            if(gmailConnected) TextButton(onClick=onDisconnectGmail,enabled=!gmailBusy) { Text("Disconnect and revoke access") }
+            Text("Google Cloud's Gmail API and an Android OAuth client matching this APK's signing certificate must be configured first. Google may block unverified apps; this feature is not linked by default.",fontSize=11.sp,color=Muted)
         } }
+        if(gmailCandidates.isNotEmpty()) {
+            item { SectionHeading("Gmail purchases to review (${gmailCandidates.size})") }
+            items(gmailCandidates) { candidate ->
+                GlassCard(Modifier.fillMaxWidth()) {
+                    Text(candidate.merchant,color=Ink,fontWeight=FontWeight.Bold,fontSize=14.sp)
+                    Text(candidate.date+" · "+candidate.subject,color=Muted,fontSize=11.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text(candidate.preview,color=Muted,fontSize=12.sp,maxLines=2)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick={onReviewGmail(candidate)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(13.dp)) {
+                        Icon(Icons.Rounded.RateReview,null,modifier=Modifier.size(17.dp))
+                        Spacer(Modifier.width(8.dp));Text("Review and save purchase")
+                    }
+                }
+            }
+        }
         item { GlassCard(Modifier.fillMaxWidth()) {
             Text("Paste an emailed receipt",fontWeight=FontWeight.Bold,color=Ink)
             Spacer(Modifier.height(9.dp))
@@ -57,7 +99,7 @@ fun SmartInboxScreen(store:TaxNestStore,onImportText:(String)->Unit) {
                     modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(13.dp)) { Text("Add to subscriptions") }
             }
         }
-        item { Text("TaxNest never reads your Gmail mailbox in this release. No password or OAuth token is collected.",fontSize=11.sp,color=Muted) }
+        item { Text("Pasted receipts and approved Gmail purchases follow the same review process. Gmail access tokens are not stored by TaxNest; live mail scanning needs your authorization and internet access.",fontSize=11.sp,color=Muted) }
     }
 }
 

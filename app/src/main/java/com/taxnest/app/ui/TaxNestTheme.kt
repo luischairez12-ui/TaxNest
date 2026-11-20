@@ -1,9 +1,12 @@
 package com.taxnest.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,14 +37,18 @@ fun Modifier.mistBackground(): Modifier = background(
     Brush.linearGradient(listOf(Color(0xFFFBFDFF),Color(0xFFEDF5FF),Color(0xFFF3EEFF)))
 )
 
+/** Opaque frosted-looking cards. Avoid nested transparent Material Surfaces which
+ *  rendered as solid bright-white rectangular patches on some OxygenOS devices. */
 @Composable
 fun GlassCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        modifier=modifier,
-        shape=RoundedCornerShape(24.dp),
-        color=Color.White.copy(alpha=.83f),
-        shadowElevation=5.dp,
-        tonalElevation=1.dp,
-        border=androidx.compose.foundation.BorderStroke(1.dp,Color.White.copy(alpha=.95f))
-    ) { Column(modifier=Modifier.padding(17.dp), content=content) }
+    val shape=RoundedCornerShape(24.dp)
+    Column(
+        modifier=modifier
+            .shadow(3.dp,shape,clip=false)
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(Color(0xFFF9FAFF),Color(0xFFF1F4FD))))
+            .border(1.dp,Color(0xFFE0E7F4),shape)
+            .padding(17.dp),
+        content=content
+    )
 }

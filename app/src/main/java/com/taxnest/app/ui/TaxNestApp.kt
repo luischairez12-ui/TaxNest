@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.taxnest.app.data.*
 import com.taxnest.app.receipts.ReceiptDraft
+import com.taxnest.app.gmail.GmailReceiptCandidate
 
 enum class Page(val label:String) { Home("Home"), Receipts("Receipts"), Money("Money"), TaxBreaks("Tax Breaks"), More("More"), Subscriptions("Subscriptions"), Overtime("Overtime"), Mileage("Mileage"), Credit("Credit"), SmartInbox("Smart Inbox"), Reports("Reports") }
 private enum class Editor { None, Money, Subscription, Overtime, Mileage, Credit }
@@ -39,7 +40,15 @@ fun TaxNestApp(
     onImportText:(String)->Unit,
     onExportPdf:()->Unit,
     onImportCsv:()->Unit,
-    onExportCsv:()->Unit
+    onExportCsv:()->Unit,
+    gmailBusy:Boolean,
+    gmailConnected:Boolean,
+    gmailStatus:String,
+    gmailCandidates:List<GmailReceiptCandidate>,
+    onConnectGmail:()->Unit,
+    onSyncGmail:()->Unit,
+    onDisconnectGmail:()->Unit,
+    onReviewGmail:(GmailReceiptCandidate)->Unit
 ) {
     var page by remember { mutableStateOf(Page.Home) }
     var editor by remember { mutableStateOf(Editor.None) }
@@ -59,7 +68,9 @@ fun TaxNestApp(
                     Page.Overtime -> OvertimeScreen(store,{editor=Editor.Overtime})
                     Page.Mileage -> MileageScreen(store,{editor=Editor.Mileage})
                     Page.Credit -> CreditScreen(store,{editor=Editor.Credit})
-                    Page.SmartInbox -> SmartInboxScreen(store,onImportText)
+                    Page.SmartInbox -> SmartInboxScreen(store,onImportText,
+                        gmailBusy,gmailConnected,gmailStatus,gmailCandidates,
+                        onConnectGmail,onSyncGmail,onDisconnectGmail,onReviewGmail)
                     Page.Reports -> AnnualReportScreen(store,onExportPdf,onExportCsv)
                 }
             }

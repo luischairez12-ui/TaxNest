@@ -11,8 +11,8 @@ android {
         applicationId = "com.taxnest.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions {
@@ -34,5 +34,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
     implementation("androidx.documentfile:documentfile:1.1.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.android.gms:play-services-auth:22.0.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

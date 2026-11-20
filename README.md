@@ -1,3 +1,9 @@
+# TaxNest — Batch 3 (UI polish + optional Gmail)
+
+**What's new:** replaced translucent Material Surface cards with consistent opaque lavender/white cards to address bright rectangular render artifacts seen on OnePlus/OxygenOS; added optional, on-demand **read-only Gmail authorization and receipt review** using the Google AuthorizationClient and Gmail API. The connection requires Google Cloud Gmail API + OAuth Android client configuration matching the APK signing SHA-1, and may require verification. No Gmail data is read until the user explicitly authorizes and initiates a sync. Only user-approved receipts are saved to the SQLite database.
+
+See [GMAIL_SETUP.md](GMAIL_SETUP.md) for setup requirements, privacy limitations and signing guidance.
+
 # TaxNest — Android app, Batch 2
 
 **A real native Android / Kotlin / Jetpack Compose project, based on the approved Mi Transfer / Mi Tidy glassmorphism concept.**
